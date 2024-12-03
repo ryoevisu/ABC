@@ -1,24 +1,35 @@
-# ---#---#------[AUTHOR Yuri Evisu]------#---#---#
+#---#---#------[AUTHOR Yuri Evisu]------#---#---#
 ###----------[ IMPORT LIBRARY ]---------- ###
 import requests, os, re, bs4, calendar, sys, json, time, random, datetime, subprocess, logging, base64, uuid
-from concurrent.futures import ThreadPoolExecutor
+import inquirer
+from inquirer import themes
 from datetime import datetime
 from time import sleep
 from time import sleep as jeda
 from time import strftime
 from random import choice
 from pathlib import Path
-from rich.console import Console as sol
-from rich.markdown import Markdown as mark
-from rich.columns import Columns as col
-from rich.text import Text as tekz
-from rich.panel import Panel as nel
+from rich.console import Console
+from rich.markdown import Markdown
+from rich.columns import Columns
+from rich.text import Text
+from rich.panel import Panel
 from rich import print as cetak
+from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+from rich.tree import Tree
+from rich.table import Table
+from rich.live import Live
+from rich.prompt import Prompt
+from rich.syntax import Syntax
+from rich.layout import Layout
+from pyfiglet import figlet_format
+from termcolor import colored
+from tabulate import tabulate
+from alive_progress import alive_bar
 
-###----------[ GLOBAL VARIABLES ]---------- ###
+# Initialize Console
+console = Console()
 ses = requests.Session()
-MAX_WORKERS = 30
-SLEEP_INTERVAL = 1
 
 ###----------[ CALENDAR ]----------###
 bulan = {'1':'January','2':'February','3':'March','4':'April','5':'May','6':'June','7':'July','8':'August','9':'September','10':'October','11':'November','12':'December'}
@@ -29,234 +40,206 @@ tanggal = (str(tgl)+' '+str(bln)+' '+str(thn))
 waktu = strftime('%H:%M:%S')
 hari = datetime.now().strftime("%A")
 
-###----------[ WARNA 1 ]---------- ###
-Z = "\x1b[0;90m"     # Hitam
-M = "\x1b[38;5;196m" # Merah
-H = "\x1b[38;5;46m"  # Hijau
-K = "\x1b[38;5;226m" # Kuning
-B = "\x1b[38;5;44m"  # Biru
-U = "\x1b[0;95m"     # Ungu
-O = "\x1b[0;96m"     # Biru Muda
-P = "\x1b[38;5;231m" # Putih
-J = "\x1b[38;5;208m" # Jingga
-A = "\x1b[38;5;248m" # Abu-Abu
-N = '\x1b[0m'        # WARNA MATI
-PT = '\x1b[1;97m'    # PUTIH TEBAL
-MT = '\x1b[1;91m'    # MERAH TEBAL
-HT = '\x1b[1;92m'    # HIJAU TEBAL
-KT = '\x1b[1;93m'    # KUNING TEBAL
-BT = '\x1b[1;94m'    # BIRU TEBAL
-UT = '\x1b[1;95m'    # UNGU TEBAL
-OT = '\x1b[1;96m'    # BIRU MUDA TEBAL
+# [Previous color definitions remain the same...]
 
-###----------[ WARNA 2 ]---------- ###
-Z2 = "[#000000]"     # HITAM
-M2 = "[#FF0000]"     # MERAH
-H2 = "[#00FF00]"     # HIJAU
-K2 = "[#FFFF00]"     # KUNING
-B2 = "[#00C8FF]"     # BIRU
-U2 = "[#AF00FF]"     # UNGU
-N2 = "[#FF00FF]"     # PINK
-O2 = "[#00FFFF]"     # BIRU MUDA
-P2 = "[#FFFFFF]"     # PUTIH
-J2 = "[#FF8F00]"     # JINGGA
-A2 = "[#AAAAAA]"     # ABU-ABU
+###----------[ IMPROVED BANNER ]----------###
+def create_banner():
+    banner_text = figlet_format("BOT SHARE", font="slant")
+    return colored(banner_text, "cyan")
 
-###----------[ USER AGENT ]---------- ###
-def random_ua():
-    ua_list = [
-        'Mozilla/5.0 (Linux; Android 3.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.66 Mobile Safari/537.36',
-        'Mozilla/5.0 (Linux; Android 5.0; SM-G900P Build/LRX21T; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/43.0.2357.121 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/35.0.0.48.273;]',
-        'nokiac3-00/5.0 (07.20) profile/midp-2.1 configuration/cldc-1.1 mozilla/5.0 applewebkit/420+ (khtml, like gecko) safari/420+',
-        'Mozilla/5.0 (Linux; Android 10; Mi 9T Pro Build/QKQ1.190825.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/88.0.4324.181 Mobile Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (Linux; Android 5.1.1; A37f) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.105 Mobile Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (Linux; Android 11; vivo 1918) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 12_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/12.1 Mobile/15E148 Safari/604.1',
-        'Mozilla/5.0 (Linux; Android 5.0; ASUS_Z00AD Build/LRX21V) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/37.0.0.0 Mobile Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (Linux; U; Android 5.0.1; ru-RU; Lenovo A788t Build/LRX22C) AppleWebKit/534.30 (KHTML, like Gecko) Version/4.0 UCBrowser/11.3.0.950 U3/0.8.0 Mobile Safari/E7FBAF',
-        'Mozilla/5.0 (Linux; Android 8.1.0; HUAWEI Y7 PRIME 2019 Build/5887208) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.62 Mobile Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/93.0.4577.63 Safari/537.36 [FBAN/EMA;FBLC/id_ID;FBAV/239.0.0.10.109;]',
-        'Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.4896.58 Mobile Safari/537.36',
-        'Mozilla/5.0 (Linux; Android 8.0.0; RNE-L21 Build/HUAWEIRNE-L21; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/100.0.4896.58 Mobile Safari/537.36 [FB_IAB/FB4A;FBAV/360.0.0.30.113;]'
-    ]
-    return random.choice(ua_list)
+###----------[ SPINNER ANIMATION ]----------###
+def show_spinner(message):
+    with Progress(
+        SpinnerColumn(spinner_name="dots12"),
+        TextColumn("[bold blue]{task.description}"),
+        TimeElapsedColumn(),
+    ) as progress:
+        task = progress.add_task(message, total=None)
+        time.sleep(2)
 
-###----------[ LOGO ]----------###
-def logo_menu():
-    li = '# WELCOME TO FACEBOOK AUTO SHARE TOOL'
-    lo = mark(li, style='white')
-    sol().print(lo, style='blue')
-    banner = f'''
-░██████╗██████╗░░█████╗░███╗░░░███╗
-██╔════╝██╔══██╗██╔══██╗████╗░████║
-╚█████╗░██████╔╝███████║██╔████╔██║
-░╚═══██╗██╔═══╝░██╔══██║██║╚██╔╝██║
-██████╔╝██║░░░░░██║░░██║██║░╚═╝░██║
-╚═════╝░╚═╝░░░░░╚═╝░░╚═╝╚═╝░░░░░╚═╝
+###----------[ IMPROVED MENU LAYOUT ]----------###
+def create_menu_layout():
+    layout = Layout()
+    layout.split_column(
+        Layout(name="header"),
+        Layout(name="body"),
+        Layout(name="footer")
+    )
+    return layout
 
-░██████╗██╗░░██╗░█████╗░██████╗░███████╗
-██╔════╝██║░░██║██╔══██╗██╔══██╗██╔════╝
-╚█████╗░███████║███████║██████╔╝█████╗░░
-░╚═══██╗██╔══██║██╔══██║██╔══██╗██╔══╝░░
-██████╔╝██║░░██║██║░░██║██║░░██║███████╗
-╚═════╝░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚═╝╚══════╝
-    '''
-    cetak(nel(banner,title=f'{P2} {H2}[ {P2}>Yuri Evisu< {H2}]',subtitle_align='left',padding=1,style='red'))
+###----------[ STATISTICS TABLE ]----------###
+def create_stats_table(name, user_id, ip, shares_count=0):
+    table = Table(show_header=True, header_style="bold magenta", border_style="blue")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="green")
+    
+    table.add_row("Username", name)
+    table.add_row("User ID", user_id)
+    table.add_row("IP Address", ip)
+    table.add_row("Total Shares", str(shares_count))
+    table.add_row("Date", tanggal)
+    table.add_row("Time", waktu)
+    
+    return table
 
-###----------[ LOGIN ]----------###
+###----------[ IMPROVED LOGIN UI ]----------###
 def login():
-    try:
-        os.system("clear")
-        cetak(nel(f'   {P2}Login Cookies First \n\n              {H2}--[ SUCCESS ]--',title=f'{P2} {H2}[ {P2}Welcome {H2}]',width=54,padding=(1,4),style='blue'))
-        cetak(nel(f'{P2} Download Cookies in Kiwi Browser',subtitle=f'{P2}┌─[ Cookies ]',subtitle_align='left',width=54,padding=1,style='blue'))
-        cookie = input(f"{P}   └──> : {H}")
+    os.system("clear")
+    console.print(create_banner())
+    
+    console.print(Panel.fit(
+        "[bold cyan]Welcome to Facebook Share Bot[/bold cyan]\n"
+        "[yellow]Please login using your Facebook cookies[/yellow]",
+        border_style="green"
+    ))
+    
+    show_spinner("Preparing login interface...")
+    
+    questions = [
+        inquirer.Text('cookie',
+                     message="Please enter your Facebook cookie",
+                     validate=lambda _, x: len(x) > 0
+        ),
+    ]
+    
+    answers = inquirer.prompt(questions, theme=themes.GreenPassion())
+    
+    if not answers:
+        console.print("[red]Login cancelled[/red]")
+        return
         
-        with requests.Session() as session:
-            try:
-                url = "https://business.facebook.com/business_locations"
-                headers = {
-                    "user-agent": random_ua(),
-                    "referer": "https://www.facebook.com/",
-                    "host": "business.facebook.com",
-                    "origin": "https://business.facebook.com",
-                    "upgrade-insecure-requests": "1",
-                    "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-                    "cache-control": "max-age=0",
-                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                    "content-type": "text/html; charset=utf-8"
-                }
-                cookies = {"cookie": cookie}
-                response = session.get(url, headers=headers, cookies=cookies)
-                token = re.search("(EAAG\w+)", response.text)
+    cookie = answers['cookie']
+    
+    with console.status("[bold blue]Validating credentials...") as status:
+        try:
+            data = ses.get("https://business.facebook.com/business_locations", headers = {
+                "user-agent": "Mozilla/5.0 (Linux; Android 8.1.0; MI 8 Build/OPM1.171019.011) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.86 Mobile Safari/537.36",
+                "referer": "https://www.facebook.com/",
+                "host": "business.facebook.com",
+                "origin": "https://business.facebook.com",
+                "upgrade-insecure-requests" : "1",
+                "accept-language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+                "cache-control": "max-age=0",
+                "accept":"text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "content-type":"text/html; charset=utf-8"
+            }, cookies = {"cookie":cookie})
+            
+            find_token = re.search("(EAAG\w+)", data.text)
+            if find_token:
+                open("token.json", "w").write(find_token.group(1))
+                open("cookie.json", "w").write(cookie)
+                console.print("[green]Login successful![/green]")
+                time.sleep(2)
+                return True
+            else:
+                raise Exception("Token not found")
                 
-                if token:
-                    with open("token.json", "w") as f:
-                        f.write(token.group(1))
-                    with open("cookie.json", "w") as f:
-                        f.write(cookie)
-                    cetak(nel(f'{P2} LOGIN SUCCEED',width=24,style=f"#00FF00"))
-                    time.sleep(2)
-                    bot_share()
-                else:
-                    raise Exception("Token not found")
-                    
-            except Exception as e:
-                os.system("rm token.json cookie.json")
-                cetak(nel(f'{P2} COOKIE INVALID',width=22,style=f"#00FF00"))
-                time.sleep(1.5)
-                login()
-    except Exception as e:
-        print(f"Error: {str(e)}")
-        login()
+        except Exception as e:
+            console.print(f"[red]Login failed: {str(e)}[/red]")
+            if os.path.exists("token.json"): os.remove("token.json")
+            if os.path.exists("cookie.json"): os.remove("cookie.json")
+            time.sleep(2)
+            return False
 
-###----------[ IMPROVED SHARE FUNCTION ]----------###
-def share_post(url, token, cookie):
-    try:
-        headers = {
-            "authority": "graph.facebook.com",
-            "cache-control": "max-age=0",
-            "sec-ch-ua-mobile": "?0",
-            "user-agent": random_ua()
-        }
-        data = {
-            "link": url,
-            "published": "0",
-            "access_token": token
-        }
-        response = requests.post(
-            "https://graph.facebook.com/v13.0/me/feed",
-            params=data,
-            headers=headers,
-            cookies={"cookie": cookie}
-        )
-        return response.json().get("id") is not None
-    except Exception:
-        return False
-
-###----------[ IMPROVED BOT SHARE ]----------###
+###----------[ IMPROVED SHARE BOT ]----------###
 def bot_share():
     try:
-        os.system('clear')
-        token = open("token.json", "r").read()
-        cookie = open("cookie.json", "r").read()
-        cookie_dict = {"cookie": cookie}
-        
-        # Get user information
+        token = open("token.json","r").read()
+        cok = open("cookie.json","r").read()
+        cookie = {"cookie":cok}
         ip = requests.get("https://api.ipify.org").text
-        user_info = requests.get(
-            f"https://graph.facebook.com/me?fields=name,id&access_token={token}",
-            cookies=cookie_dict
-        ).json()
-        nama = user_info.get("name")
-        uid = user_info.get("id")
         
-        # Post comment
-        requests.post(
-            f"https://graph.facebook.com/826244541950192/comments/?message={kom1}&access_token={token}",
-            headers={"cookie": cookie}
-        )
-        
-        # Display menu
-        os.system('clear')
-        logo_menu()
-        cetak(nel(f'''
-{P2} Owner      : {H2}Yuri Evisu 
-{P2} User Active     : {H2}{nama} 
-{P2} You Id          : {uid}
-{P2} You Ip          : {ip}
-{P2} Current Date    : {hari}, {tanggal}''',
-        title=f'{P2} {H2}[ {P2}User Information {H2}]',
-        subtitle_align='left',
-        padding=1,
-        style='blue'))
-        
-        # Get share details
-        cetak(nel(f'{P2}Hello {H2}{nama}{P2}, copy the post link must be from Facebook Lite otherwise an error will occur when the bot share process runs.',
-              title=f'{P2} {H2}[ {P2}Notes {H2}]',
-              subtitle_align='left',
-              padding=1,
-              style='blue'))
-        
-        cetak(nel(f'{P2} LINK POST',subtitle=f'{P2}┌─',subtitle_align='left',width=25,padding=0,style='blue'))
-        link = input(f"{P}   └──> : {H}")
-        cetak(nel(f'{P2} AMOUNT OF SHARES',subtitle=f'{P2}┌─',subtitle_align='left',width=22,padding=0,style='blue'))
-        jumlah = int(input(f"{P}   └──> : {H}"))
-        cetak(nel(f'{P2} AUTO SHARE ONGOING',subtitle=f'{P2}┌─',subtitle_align='left',width=29,padding=0,style='blue'))
-        
-        # Perform sharing with ThreadPoolExecutor
-        start_time = datetime.now()
-        success_count = 0
-        
-        with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            futures = [executor.submit(share_post, link, token, cookie) for _ in range(jumlah)]
-            for i, future in enumerate(futures):
-                if future.result():
-                    success_count += 1
-                    elapsed = str(datetime.now() - start_time).split('.')[0]
-                    print(f'{P}\r   └──> {elapsed} Successfully Shared {H}{success_count}{P} Post {N} ', end='')
-                    sys.stdout.flush()
-                time.sleep(SLEEP_INTERVAL)
-        
-        print("\n\nSharing completed!")
-        
-    except Exception as e:
-        print(f"\nError: {str(e)}")
-        os.system("rm token.json cookie.json")
-        cetak(nel(f'{P2} AUTO SHARE STOP POSSIBLE INVALID COOKIES',width=35,padding=0,style='red'))
-        exit()
+        user_info = ses.get(f"https://graph.facebook.com/me?fields=name,id&access_token={token}",cookies=cookie).json()
+        nama = user_info["name"]
+        user_id = user_info["id"]
 
-###----------[ MAIN ]----------###
+    except Exception as e:
+        console.print("[red]Session expired. Please login again.[/red]")
+        os.system("rm token.json cookie.json")
+        time.sleep(1.5)
+        login()
+        return
+
+    os.system("clear")
+    console.print(create_banner())
+    
+    # Show user stats
+    console.print(create_stats_table(nama, user_id, ip))
+    
+    # Get share details using inquirer
+    questions = [
+        inquirer.Text('link',
+                     message="Enter the Facebook post link",
+                     validate=lambda _, x: len(x) > 0
+        ),
+        inquirer.Text('shares',
+                     message="Enter number of shares",
+                     validate=lambda _, x: x.isdigit() and int(x) > 0
+        ),
+    ]
+    
+    answers = inquirer.prompt(questions, theme=themes.GreenPassion())
+    
+    if not answers:
+        console.print("[red]Operation cancelled[/red]")
+        return
+        
+    link = answers['link']
+    jumlah = int(answers['shares'])
+    
+    # Initialize progress tracking
+    start_time = datetime.now()
+    success_count = 0
+    
+    with alive_bar(jumlah, title='Sharing Progress', bar='classic2', spinner='classic') as bar:
+        try:
+            for x in range(jumlah):
+                header = {"authority": "graph.facebook.com",
+                         "cache-control": "max-age=0",
+                         "sec-ch-ua-mobile": "?0",
+                         "user-agent": ua_random}
+                
+                post = ses.post(f"https://graph.facebook.com/v13.0/me/feed?link={link}&published=0&access_token={token}",
+                              headers=header, cookies=cookie).text
+                
+                if "id" in post:
+                    success_count += 1
+                    elapsed = str(datetime.now()-start_time).split('.')[0]
+                    console.print(f"[green]✓ Share {success_count}/{jumlah} successful[/green]")
+                else:
+                    console.print("[red]× Share failed[/red]")
+                
+                bar()
+                time.sleep(0.5)  # Prevent rate limiting
+                
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Operation cancelled by user[/yellow]")
+            return
+        except Exception as e:
+            console.print(f"\n[red]Error occurred: {str(e)}[/red]")
+            return
+    
+    # Show final statistics
+    elapsed_time = str(datetime.now()-start_time).split('.')[0]
+    final_stats = Table(show_header=True, header_style="bold magenta")
+    final_stats.add_column("Metric", style="cyan")
+    final_stats.add_column("Value", style="green")
+    
+    final_stats.add_row("Total Attempts", str(jumlah))
+    final_stats.add_row("Successful Shares", str(success_count))
+    final_stats.add_row("Failed Shares", str(jumlah - success_count))
+    final_stats.add_row("Success Rate", f"{(success_count/jumlah)*100:.2f}%")
+    final_stats.add_row("Total Time", elapsed_time)
+    
+    console.print("\n[bold cyan]Share Operation Complete![/bold cyan]")
+    console.print(final_stats)
+
 if __name__ == "__main__":
     try:
-        os.system('git pull')
-    except:
-        pass
-    try:
-        os.mkdir('OK')
-    except:
-        pass
-    try:
-        os.mkdir('CP')
-    except:
-        pass
-    bot_share()
+        if not os.path.exists("token.json") or not os.path.exists("cookie.json"):
+            if login():
+                bot_share()
+        else:
+            bot_share()
+    except Exception as e:
+        console.print(f"[red]Fatal Error: {str(e)}[/red]")
