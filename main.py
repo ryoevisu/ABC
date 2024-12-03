@@ -1,4 +1,4 @@
-#---#---#------[AUTHOR KAITO DEV]------#---#---#
+#---#---#------[AUTHOR KAITO DEV]------#---#---
 ###----------[ IMPORT LIBRARY ]---------- ###
 import requests, os, re, bs4, calendar, sys, json, time, random, datetime, subprocess, logging, base64,uuid
 from datetime import datetime
